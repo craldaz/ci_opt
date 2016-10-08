@@ -115,7 +115,7 @@ class ICoord {
   //void update_ic_sd();
   //void update_ic_cg();
   void update_ic_qn();
-  void update_ic_eigen();
+  //void update_ic_eigen();
   void update_ic_eigen_h(double* C, double* D);
   void update_ic_eigen_ts(double* C);
   void walk_up();
@@ -144,8 +144,7 @@ class ICoord {
   double* Gmih; //Gm^-1/2
   void get_gm();
   void create_mwHint_EV(double* Lm, double* Lme);
- 
-
+  
   public:
 
   int revertOpt;
@@ -175,6 +174,7 @@ class ICoord {
   void update_bfgs();
   void update_bfgsp(int makeHint);
   void update_bofill();
+  void update_ic_eigen();
   void save_hess();
 
   double getR(int i);

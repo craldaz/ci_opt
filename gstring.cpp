@@ -65,9 +65,8 @@ void GString::String_Method_Optimization()
 	
 	if (isESSM)
 	{
-		printf(" in\n");
-		//Conical meci;
 		Conical meci(coords[0],natoms,anames,anumbers,amasses, CONV_TOL, STEP_OPT_ITERS, runNum, ncpu,restart_wfn,infile0);
+		meci.algorithm();
 		exit(-1);
 	}
 

@@ -12,7 +12,6 @@ class Conical {
 		double* dvecq_U;
 		double dE; // energy gap in kcal/mol
 		double* coords;
-		double* grads;
 		int natoms;
   	int ncpu; // number of cpu for qchem,molpro, etc
   	int runNum; // unique id for this gstring instance
@@ -29,6 +28,8 @@ class Conical {
 		int nstates;
 		int wstate;
 		int wstate2;
+		double energy;
+		double norm_dg;
 		
 	
 	public:
@@ -38,6 +39,9 @@ class Conical {
 		 //Conical();
 		int create_space();
 		double constrain_space();
+		void update_space();
+		void combined_step();
+		void algorithm();
 	
 
 };

@@ -136,7 +136,7 @@ int ICoord::bmat_free() {
 
 int ICoord::bmatp_create() {
 
-  printf(" in bmatp_create \n");
+  //printf(" in bmatp_create \n");
 
   int len = nbonds+nangles+ntor;
   int N3 = 3*natoms;
@@ -289,7 +289,7 @@ int ICoord::bmatp_create() {
 
 int ICoord::bmatp_to_U()
 {
-  printf(" in bmatp_to_U \n");
+  //printf(" in bmatp_to_U \n");
  // fflush(stdout);
   int len = nbonds+nangles+ntor;
   int N3 = 3*natoms;
@@ -464,7 +464,7 @@ int ICoord::bmatp_to_U()
 
 int ICoord::bmat_create() 
 {
-  printf(" in bmat_create() \n");
+  //printf(" in bmat_create() \n");
  // fflush(stdout);
 
   int len = nbonds+nangles+ntor;
@@ -474,7 +474,7 @@ int ICoord::bmat_create()
   
   int len_d = nicd0;
 
-  printf(" determining q in delocalized internals \n");
+  //printf(" determining q in delocalized internals \n");
   //printf(" nicd: %i \n",nicd);
   update_ic();
   for (int i=0;i<len_d;i++)
@@ -3518,7 +3518,7 @@ int ICoord::grad_to_q()
     force_notbonds();
 #endif
 
-  //printf(" in grad_to_q \n"); print_grad();
+  printf(" in grad_to_q \n"); print_grad();
 
   int N3 = 3*natoms;
   int len_d = nicd0;
@@ -4077,7 +4077,7 @@ void ICoord::update_ic_eigen()
   double* dqe0 = new double[len];
   double lambda1 = 0.;
 
-  //print_gradq();
+  print_gradq();
 #if 0
   for (int i=0;i<len;i++)
     if(abs(gradq[i])>MAXAD)
@@ -4206,7 +4206,7 @@ void ICoord::update_ic_eigen()
     printf(" %1.4f",dqe0[i]);
   printf("\n");
 #endif
-#if 0
+#if 1
   printf(" dq0: ");
   for (int i=0;i<len0;i++)
     printf(" %1.4f",dq0[i]);
