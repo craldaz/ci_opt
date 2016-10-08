@@ -1,4 +1,5 @@
 #include "gstring.h"
+#include "conical.h"
 #include "omp.h"
 using namespace std;
 
@@ -61,6 +62,14 @@ void GString::String_Method_Optimization()
     cout << "****** Starting IC-GSM calculation *****" << endl;
   cout << "****************************************" << endl;
   cout << "****************************************" << endl;
+	
+	if (isESSM)
+	{
+		printf(" in\n");
+		//Conical meci;
+		Conical meci(coords[0],natoms,anames,anumbers,amasses, CONV_TOL, STEP_OPT_ITERS, runNum, ncpu,restart_wfn,infile0);
+		exit(-1);
+	}
 
   int climber = 1;
   int finder = 1;

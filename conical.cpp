@@ -2,76 +2,65 @@
 using namespace std;
 
 
-//Conical::Conical( string xyzfile, string infilename)
-//{
-//  printf("Initializing Tolerances and Parameters... \n");
-//  printf("  -Opening %s \n",infilename.c_str());
-//
-//  ifstream infile;
-//  infile.open(infilename.c_str());
-//  if (!infile){
-//    printf("\n Error opening %s \n",infilename.c_str());
-//    exit(-1);
-//  }
-//
-//  printf("  -reading file... \n");
-//  // pass infile to stringtools and get the line containing tag
-//  string tag="String Info";
-//  bool found=StringTools::findstr(infile, tag);
-//  if (!found) { cout << "Could not find tag for Default Info" << endl; exit(-1);}
-//  string line, templine, tagname;
-//
-//  // parse the input section
-//  bool stillreading=true;
-//  while (stillreading)
-//  {
-//    stillreading=false;
-//    // set to false and set back to true if we read something
-//    // get filename
-//    getline(infile, line);
-//    vector<string> tok_line = StringTools::tokenize(line, " ,\t");
-//    templine=StringTools::newCleanString(tok_line[0]);
-//    tagname=StringTools::trimRight(templine);
-//    // these variables are denoted by strings with same name
-//    if (tagname=="STEP_OPT_ITERS") {
-//      STEP_OPT_ITERS = atoi(tok_line[1].c_str());
-//      stillreading = true;
-//      cout <<"  -STEP_OPT_ITERS: " << STEP_OPT_ITERS << endl;
-//    }
-//    if (tagname=="CONV_TOL") {
-//      CONV_TOL=atof(tok_line[1].c_str());
-//      stillreading=true;
-//      cout <<"  -CONV_TOL = " << CONV_TOL << endl;
-//    }
-//    if (tagname=="ADD_NODE_TOL"){
-//      ADD_NODE_TOL=atof(tok_line[1].c_str());
-//      stillreading=true;
-//      cout <<"  -ADD_NODE_TOL = " << ADD_NODE_TOL << endl;
-//    }
-//	  if (tagname=="RESTART_WFN"){
-//			restart_wfn = atoi(tok_line[1].c_str());
-//			stillreading=true;
-//			cout <<"  -restart_wfn = " << restart_wfn << endl; 
-//		}
-//    if (tagname=="nnodes" || tagname=="NNODES"){
-//      nnmax = atoi(tok_line[1].c_str());
-//      stillreading = true;
-//      cout <<"  -NNODES = " << nnmax << endl;
-//      if (nnmax < 3)
-//      {
-//        printf("\n\n ERROR: NNODES cannot be less than 3 \n");
-//        exit(1);
-//      }
-//    }
-//
-//  } //while stillreading
-//  infile.close();
-//  nnmax0 = nnmax;
-//
-//  printf(" Done reading inpfileq \n\n");
-//	molecule.init(xyzfile);
-//	molecule.grad_init(infileq,ncpu,run,0,0);
-//}
+Conical::Conical(double* xyz,int natom,string* atoms,int* anumber,double* masses, double conv_tol, int max_steps, int run, int nprocs, int guess_wfn, string infile) 
+{		
+
+	printf(" In the constructor\n");
+	natoms=natom;
+	printf(" natoms = %i\n",natoms);
+	
+	anumbers = new int[1+natoms];
+  amasses = new double[1+natoms];
+  anames = new string[1+natoms];
+	coords = new double[3*natoms+1];
+	grads = new double[3*natoms+1];
+	dgrad = new double[3*natoms+1];
+	dvec = new double[3*natoms+1];
+	
+	for (int i=0;i<natoms;i++)
+	{
+		anames[i]=atoms[i];
+		anumbers[i]=anumber[i];
+		amasses[i]=masses[i];
+	}
+	for (int i=0;i<3*natoms;i++)
+		coords[i]=xyz[i];
+
+	CONV_TOL = conv_tol;
+	STEP_OPT_ITERS=max_steps;
+	runNum= run;
+	ncpu=nprocs;
+	molecule.alloc(natoms);
+	molecule.reset(natoms,anames,anumbers,coords);
+	molecule.print_xyz();
+	
+	create_space();
+
+	if (guess_wfn)
+		molecule.grad1.seedType = 3;
+	else
+  	molecule.grad1.seedType = 1; //seed from INIT1
+	
+  molecule.grad_init(infile,ncpu,runNum,runend,0); //level 3 is exact kNNR only, 0 is QM grad always
+	V0=molecule.grad1.grads(coords, grads, molecule.Ut, 3);
+	printf(" V0=%1.2f\n",V0);
+  nicd0 = molecule.nicd0;
+  size_ic = molecule.nbonds+molecule.nangles+molecule.ntor;
+  nstates = molecule.grad1.nstates;
+  wstate = molecule.grad1.wstate;
+  wstate2 = molecule.grad1.wstate2;
+  printf(" nstate: %i, wstate: %i, wstate2: %i\n",nstates,wstate,wstate2);
+
+	dgradq = new double[nicd0];
+	dvecq = new double[nicd0];
+	dgradq_U = new double[size_ic];
+	dvecq_U = new double[size_ic];
+
+	constrain_space();
+	molecule.make_Hint();
+	 printf(" finished\n");
+	
+}
 
 
 int Conical::create_space()
@@ -83,5 +72,77 @@ int Conical::create_space()
 	molecule.bmatp_to_U();
 	molecule.bmat_create();
 	printf(" Done creating bmatrix stuff\n");
-
+	return done;
 }
+
+
+
+double Conical::constrain_space()
+{
+  for (int i=0;i<nstates-1;i++)
+  {
+	 molecule.grad1.dE[i] = molecule.grad1.E[i+1] - molecule.grad1.E[i];
+	 printf(" dE[%i]:  %5.4f\t ",i+1,molecule.grad1.dE[i]);
+  }
+  printf("\n");
+  dE = molecule.grad1.dE[wstate2-2]/627.5; //kcal2Hartree
+#if 1
+	printf(" Grads\n");
+	for (int j=0;j<2;j++)
+	{for (int i=0;i<3*natoms;i++)	
+		printf(" %1.3f",molecule.grad1.grada[j][i]);
+		printf(" \n");
+	}
+#endif
+	printf(" Calculating dgrad\n");
+	for (int i=0;i<3*natoms;i++)	
+		dgrad[i] = molecule.grad1.grada[1][i]- molecule.grad1.grada[0][i];
+	printf(" Calculating dvec[0]\n");
+	molecule.grad1.dvec_calc(molecule.coords,dvec,1,0);
+
+#if 0
+	printf(" printing dgrad\n");
+	for (int i=0;i<3*natoms;i++)
+		printf("%1.3f\t",dgrad[0][i]);	
+	printf("\n");
+#endif
+#if 0
+	double test=0;
+	for (int i=0;i<3*natoms;i++)
+		test+=dgradi]*dgrad[i];
+	test=sqrt(test);
+	printf(" norm dgrad cartesians %1.2f\n",test);
+#endif
+
+	molecule.dgrad_to_q(dgrad,dgradq);
+	molecule.dgrad_to_q(dvec,dvecq);
+
+
+		double norm_dg=0.; 
+#if !DG_ROT
+	norm_dg=molecule.project_gradq(dgradq,dgradq_U);
+	molecule.project_gradq(dvecq,dvecq_U);
+#else 
+	norm_dg=molecule.dgrot_mag(dgradq,dvecq);
+	molecule.project_gradq(dvecq,dvecq_U);
+	molecule.project_gradq(dgradq,dgradq_U);
+#endif
+
+#if 1
+    printf(" printing dgradq_U \n");
+	for (int j=0;j<size_ic;j++)
+		printf(" %1.3f ",dgradq_U[j]);
+    printf("\n");
+#endif
+
+	molecule.constrain_bp(dgradq_U,dvecq_U);
+	molecule.bmat_create();
+	molecule.print_q();
+		
+
+	return norm_dg;
+}
+
+
+
+

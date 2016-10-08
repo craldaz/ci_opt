@@ -52,11 +52,11 @@ depend :
 # DO NOT DELETE created with g++ -MM *.cpp *.c
 LST.o: LST.cpp LST.h constants.h utils.h
 eckart.o: eckart.cpp eckart.h constants.h utils.h
-gstring.o: gstring.cpp gstring.h utils.h constants.h stringtools.h pTable.h qchem.h eckart.h icoord.h qchem.h ase.h grad.h
+gstring.o: gstring.cpp gstring.h utils.h constants.h stringtools.h pTable.h qchem.h eckart.h icoord.h qchem.h ase.h grad.h conical.h
 mem.o: mem.cpp icoord.h qchem.h
 bmat.o: bmat.cpp icoord.h qchem.h
 icoord.o: icoord.cpp icoord.h qchem.h
-main.o: main.cpp icoord.h conical.h
+main.o: main.cpp icoord.h 
 mopac.o: mopac.cpp mopac.h qchem.h
 mm_grad.o: mm_grad.cpp icoord.h 
 optimize.o: optimize.cpp optimize.h utils.h constants.h eckart.h stringtools.h pTable.h qchem.h 
